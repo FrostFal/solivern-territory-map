@@ -285,27 +285,18 @@
       { name: "Asmit", color: "#8b5cf6", bg: "bg-purple-500", border: "border-purple-500" }
     ];
 
-    // Default Seed Leads across key US and Global Target Regions
+    // Default Seed Leads across key US and Global Target Regions (Avner only)
     let leadsData = [
       { id: "L-101", company: "Boston Dynamics Tech", name: "David Miller", email: "david@bostontech.io", assigned_to: "Avner", status: "Contacted", city: "Boston", state: "Massachusetts", country: "USA", lat: 42.3601, lng: -71.0589, notes: "AI Automation Pitch" },
-      { id: "L-102", company: "Mass Solar Solutions", name: "Sarah Jenkins", email: "sarah@mass-solar.com", assigned_to: "Avner", status: "In Progress", city: "Cambridge", state: "Massachusetts", country: "USA", lat: 42.3736, lng: -71.1097, notes: "Follow up call booked" },
-      { id: "L-103", company: "Windy City Logistics", name: "Michael Chang", email: "mchang@chicago-logistics.com", assigned_to: "Adrian", status: "New", city: "Chicago", state: "Illinois", country: "USA", lat: 41.8781, lng: -87.6298, notes: "Supply chain outreach" },
-      { id: "L-104", company: "Illinois Medical Group", name: "Elena Rostova", email: "elena@ilmed.org", assigned_to: "Adrian", status: "Contacted", city: "Naperville", state: "Illinois", country: "USA", lat: 41.7508, lng: -88.1535, notes: "Sent cold briefing" },
-      { id: "L-105", company: "Pacific Energy Seattle", name: "Robert Thorne", email: "rthorne@pacificenergy.com", assigned_to: "Sayantan", status: "Won", city: "Seattle", state: "Washington", country: "USA", lat: 47.6062, lng: -122.3321, notes: "Closed 3-month contract" },
-      { id: "L-106", company: "Cascade Web Studio", name: "Chloe Bennett", email: "chloe@cascadeweb.io", assigned_to: "Sayantan", status: "Contacted", city: "Bellevue", state: "Washington", country: "USA", lat: 47.6101, lng: -122.2015, notes: "Web redesign pipeline" },
-      { id: "L-107", company: "Silicon Beach Agency", name: "Lucas Vance", email: "lucas@beachagency.la", assigned_to: "Aryan", status: "In Progress", city: "Los Angeles", state: "California", country: "USA", lat: 34.0522, lng: -118.2437, notes: "Video ad campaigns" },
-      { id: "L-108", company: "Bay Area FinTech", name: "Priya Sharma", email: "psharma@bayfintech.co", assigned_to: "Aryan", status: "Contacted", city: "San Francisco", state: "California", country: "USA", lat: 37.7749, lng: -122.4194, notes: "Security integration" },
-      { id: "L-109", company: "Austin Cloud Ventures", name: "Travis Cole", email: "travis@austincloud.tech", assigned_to: "Rezwan", status: "New", city: "Austin", state: "Texas", country: "USA", lat: 30.2672, lng: -97.7431, notes: "B2B SaaS outreach" },
-      { id: "L-110", company: "Lone Star Heavy Industries", name: "Hank Schrader", email: "hank@lonestarhi.com", assigned_to: "Rezwan", status: "Contacted", city: "Houston", state: "Texas", country: "USA", lat: 29.7604, lng: -95.3698, notes: "Sent portfolio" },
-      { id: "L-111", company: "London Bridge FinCapital", name: "Arthur Pendelton", email: "arthur@londonbridgefc.co.uk", assigned_to: "Asmit", status: "In Progress", city: "London", state: "England", country: "United Kingdom", lat: 51.5074, lng: -0.1278, notes: "UK financial district target" },
-      { id: "L-112", company: "Berlin Green Energy", name: "Stefan Müller", email: "stefan@berlingreen.de", assigned_to: "Asmit", status: "New", city: "Berlin", state: "Berlin", country: "Germany", lat: 52.5200, lng: 13.4050, notes: "European renewable lead" }
+      { id: "L-102", company: "Mass Solar Solutions", name: "Sarah Jenkins", email: "sarah@mass-solar.com", assigned_to: "Avner", status: "In Progress", city: "Cambridge", state: "Massachusetts", country: "USA", lat: 42.3736, lng: -71.1097, notes: "Follow up call booked" }
     ];
 
     // Load from LocalStorage or fetched leads_geo.json
     async function loadInitialLeads() {
-      if (localStorage.getItem("solivern_map_leads")) {
+      const storageKey = "solivern_map_leads_v2";
+      if (localStorage.getItem(storageKey)) {
         try {
-          leadsData = JSON.parse(localStorage.getItem("solivern_map_leads"));
+          leadsData = JSON.parse(localStorage.getItem(storageKey));
         } catch (e) {
           console.error("Failed to parse stored leads", e);
         }
@@ -680,7 +671,7 @@
 
     async function resetToInitialData() {
       if (confirm("Reset leads database to initial server list? This will erase local modifications.")) {
-        localStorage.removeItem("solivern_map_leads");
+        localStorage.removeItem("solivern_map_leads_v2");
         try {
           const res = await fetch('/leads_geo.json');
           if (res.ok) {
@@ -696,7 +687,7 @@
     }
 
     function saveLeadsToStorage() {
-      localStorage.setItem("solivern_map_leads", JSON.stringify(leadsData));
+      localStorage.setItem("solivern_map_leads_v2", JSON.stringify(leadsData));
     }
 
     function exportData() {
