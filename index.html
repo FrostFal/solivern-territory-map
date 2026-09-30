@@ -125,9 +125,9 @@
           <div>
             <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Map View</label>
             <select id="map-style-select" onchange="changeMapStyle(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-              <option value="dark">Dark Matter</option>
               <option value="streets">OpenStreetMap</option>
               <option value="satellite">Satellite Imagery</option>
+              <option value="terrain">Topographic / Terrain</option>
             </select>
           </div>
         </div>
@@ -325,11 +325,12 @@
     let selectedMembers = new Set(TEAM_MEMBERS.map(m => m.name));
     let map, markerClusterGroup, tileLayer;
 
-    // Tile providers
+    // Free Tile providers (No API key required)
     const TILES = {
-      dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      dark: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
     };
 
     function initMap() {
@@ -339,8 +340,8 @@
 
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      tileLayer = L.tileLayer(TILES.dark, {
-        attribution: '&copy; Solivern Intelligence',
+      tileLayer = L.tileLayer(TILES.streets, {
+        attribution: '&copy; OpenStreetMap contributors | Solivern',
         maxZoom: 19
       }).addTo(map);
 
