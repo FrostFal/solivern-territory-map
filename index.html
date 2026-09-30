@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Solivern Lead Territory & Global Map</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -54,21 +54,26 @@
 <body class="bg-slate-950 text-slate-100 h-screen flex flex-col overflow-hidden">
 
   <!-- Header -->
-  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-6 py-3 flex items-center justify-between shrink-0 z-20">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-lg">
+  <header class="bg-slate-900/95 backdrop-blur border-b border-slate-800 px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+      <!-- Mobile Sidebar Toggle -->
+      <button onclick="toggleMobileSidebar()" class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg bg-slate-800 border border-slate-700 text-slate-200 active:scale-95 transition">
+        <i class="fa-solid fa-bars text-sm"></i>
+      </button>
+
+      <div class="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-sm sm:text-lg">
         <i class="fa-solid fa-earth-americas"></i>
       </div>
-      <div>
-        <h1 class="text-lg font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
-          Solivern Global Lead & Territory Map
+      <div class="min-w-0">
+        <h1 class="text-sm sm:text-lg font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400 truncate">
+          Solivern Territory Map
         </h1>
-        <p class="text-xs text-slate-400">Multi-member geographic target & lead allocation hub</p>
+        <p class="hidden sm:block text-xs text-slate-400 truncate">Multi-member geographic target & lead allocation hub</p>
       </div>
     </div>
 
-    <!-- Quick Stats Bar -->
-    <div class="hidden md:flex items-center gap-6 text-sm">
+    <!-- Quick Stats Bar (Desktop) -->
+    <div class="hidden lg:flex items-center gap-4 xl:gap-6 text-sm">
       <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
         <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
         <span class="text-xs font-semibold text-slate-300">Total Leads:</span>
@@ -87,15 +92,19 @@
     </div>
 
     <!-- Actions -->
-    <div class="flex items-center gap-2">
-      <button onclick="openAddLeadModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-md shadow-indigo-600/30 transition flex items-center gap-2">
-        <i class="fa-solid fa-plus"></i> Target / Insert Lead
+    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <button onclick="openAddLeadModal()" class="px-2.5 sm:px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5 sm:gap-2 active:scale-95">
+        <i class="fa-solid fa-plus text-xs"></i>
+        <span class="hidden sm:inline">Target Lead</span>
+        <span class="sm:hidden">Target</span>
       </button>
-      <button onclick="resetToInitialData()" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/60 hover:text-rose-400 hover:border-rose-800/60 text-slate-400 text-xs font-medium rounded-lg border border-slate-700/70 transition flex items-center gap-1.5" title="Reset leads database back to original defaults">
-        <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+      <button onclick="resetToInitialData()" class="px-2 sm:px-3 py-1.5 bg-slate-800 hover:bg-rose-950/60 hover:text-rose-400 hover:border-rose-800/60 text-slate-400 text-xs font-medium rounded-lg border border-slate-700/70 transition flex items-center gap-1" title="Reset leads database back to original defaults">
+        <i class="fa-solid fa-arrow-rotate-left"></i>
+        <span class="hidden sm:inline">Reset</span>
       </button>
-      <button onclick="exportData()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg border border-slate-700 transition flex items-center gap-1.5">
-        <i class="fa-solid fa-download"></i> Export JSON
+      <button onclick="exportData()" class="px-2 sm:px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg border border-slate-700 transition flex items-center gap-1">
+        <i class="fa-solid fa-download"></i>
+        <span class="hidden sm:inline">Export</span>
       </button>
     </div>
   </header>
@@ -103,11 +112,22 @@
   <!-- Main Body Layout -->
   <div class="flex-1 flex overflow-hidden relative">
 
+    <!-- Mobile Backdrop -->
+    <div id="sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden backdrop-blur-xs transition-opacity duration-300"></div>
+
     <!-- Left Sidebar: Team & Filters -->
-    <aside class="w-80 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-10 transition-all duration-300">
+    <aside id="main-sidebar" class="fixed md:static inset-y-0 left-0 w-80 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-40 md:z-10 -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none top-[53px] md:top-0 bottom-0">
       
+      <!-- Mobile Close header inside sidebar -->
+      <div class="flex md:hidden items-center justify-between px-4 py-2.5 border-b border-slate-800 bg-slate-950">
+        <span class="text-xs font-bold text-slate-300">Filters & Team Directory</span>
+        <button onclick="toggleMobileSidebar()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
       <!-- Search & Status Filter -->
-      <div class="p-4 border-b border-slate-800/80 space-y-3">
+      <div class="p-3 sm:p-4 border-b border-slate-800/80 space-y-2.5 sm:space-y-3">
         <div class="relative">
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
           <input type="text" id="search-input" oninput="applyFilters()" placeholder="Search lead, city, country..." 
@@ -137,21 +157,21 @@
       </div>
 
       <!-- Team Members List / Filter -->
-      <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+      <div class="px-3 sm:px-4 py-2 sm:py-3 border-b border-slate-800 flex items-center justify-between">
         <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Team Representatives</span>
         <button onclick="resetMemberFilter()" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition">Select All</button>
       </div>
 
-      <div class="p-3 space-y-1.5 overflow-y-auto max-h-52 border-b border-slate-800" id="team-list">
+      <div class="p-2 sm:p-3 space-y-1 sm:space-y-1.5 overflow-y-auto max-h-40 sm:max-h-52 border-b border-slate-800" id="team-list">
         <!-- Injected via JS -->
       </div>
 
       <!-- Leads List Pane -->
-      <div class="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+      <div class="px-3 sm:px-4 py-2 border-b border-slate-800 flex items-center justify-between">
         <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Territory Leads (<span id="filtered-lead-count">0</span>)</span>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-3 space-y-2" id="leads-list">
+      <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2" id="leads-list">
         <!-- Injected via JS -->
       </div>
     </aside>
@@ -160,13 +180,18 @@
     <main class="flex-1 relative bg-slate-950">
       <div id="map" class="w-full h-full"></div>
 
-      <!-- Territory Quick Legend / Controls overlay -->
-      <div class="absolute bottom-6 left-6 z-[1000] bg-slate-900/90 backdrop-blur p-3.5 rounded-xl border border-slate-800 shadow-2xl text-xs space-y-2 pointer-events-auto max-w-xs">
+      <!-- Territory Quick Legend / Controls overlay (Desktop) -->
+      <div class="hidden sm:block absolute bottom-6 left-6 z-[1000] bg-slate-900/90 backdrop-blur p-3.5 rounded-xl border border-slate-800 shadow-2xl text-xs space-y-1.5 pointer-events-auto max-w-xs">
         <div class="font-bold text-slate-200 flex items-center gap-2">
           <i class="fa-solid fa-layer-group text-indigo-400"></i> Rep Territory Overlay
         </div>
         <p class="text-[11px] text-slate-400">Click any marker or cluster to inspect assigned lead details, contact status, and address details.</p>
       </div>
+
+      <!-- Floating Button on Mobile for Quick Leads Drawer -->
+      <button onclick="toggleMobileSidebar()" class="md:hidden absolute bottom-5 right-5 z-[1000] w-12 h-12 rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-600/40 flex items-center justify-center text-lg active:scale-95 transition">
+        <i class="fa-solid fa-list-check"></i>
+      </button>
     </main>
 
   </div>
@@ -249,9 +274,9 @@
           </button>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
           <div>
-            <label class="block text-slate-400 font-semibold mb-1">Outreach Status</label>
+            <label class="block text-slate-400 font-semibold mb-1 text-[11px]">Outreach Status</label>
             <select id="form-status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
               <option value="New">New Prospect</option>
               <option value="Contacted">Contacted</option>
@@ -260,15 +285,15 @@
             </select>
           </div>
           <div>
-            <label class="block text-slate-400 font-semibold mb-1">Lead Notes</label>
+            <label class="block text-slate-400 font-semibold mb-1 text-[11px]">Lead Notes</label>
             <input type="text" id="form-notes" placeholder="Solar rooftop lead, contacted 2x..." 
               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
           </div>
         </div>
 
         <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
-          <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-600/30 transition">Save Lead</button>
+          <button type="button" onclick="closeModal()" class="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition">Cancel</button>
+          <button type="submit" class="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-600/30 transition">Save Lead</button>
         </div>
       </form>
     </div>
@@ -544,6 +569,10 @@
     function panToLead(lat, lng) {
       if (lat && lng) {
         map.flyTo([lat, lng], 12, { duration: 1.2 });
+        // Auto-close sidebar on mobile after clicking lead
+        if (window.innerWidth < 768) {
+          toggleMobileSidebar();
+        }
       }
     }
 
