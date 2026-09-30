@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solivern Lead Territory & Global Map</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet MarkerCluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .custom-cluster {
+      background-clip: padding-box;
+      border-radius: 50%;
+    }
+    .leaflet-popup-content-wrapper {
+      background: #1e293b;
+      color: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    }
+    .leaflet-popup-tip {
+      background: #1e293b;
+    }
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen flex flex-col overflow-hidden">
+
+  <!-- Header -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-6 py-3 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-lg">
+        <i class="fa-solid fa-earth-americas"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
+          Solivern Global Lead & Territory Map
+        </h1>
+        <p class="text-xs text-slate-400">Multi-member geographic target & lead allocation hub</p>
+      </div>
+    </div>
+
+    <!-- Quick Stats Bar -->
+    <div class="hidden md:flex items-center gap-6 text-sm">
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-xs font-semibold text-slate-300">Total Leads:</span>
+        <span id="stat-total-leads" class="font-bold text-white">0</span>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
+        <i class="fa-solid fa-users text-indigo-400 text-xs"></i>
+        <span class="text-xs font-semibold text-slate-300">Active Reps:</span>
+        <span id="stat-total-reps" class="font-bold text-white">6</span>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
+        <i class="fa-solid fa-location-crosshairs text-cyan-400 text-xs"></i>
+        <span class="text-xs font-semibold text-slate-300">Active Regions:</span>
+        <span id="stat-total-regions" class="font-bold text-white">0</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3">
+      <button onclick="openAddLeadModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-md shadow-indigo-600/30 transition flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> Target Lead
+      </button>
+      <button onclick="exportData()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-download"></i> Export JSON
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Body Layout -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- Left Sidebar: Team & Filters -->
+    <aside class="w-80 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-10 transition-all duration-300">
+      
+      <!-- Search & Status Filter -->
+      <div class="p-4 border-b border-slate-800/80 space-y-3">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+          <input type="text" id="search-input" oninput="applyFilters()" placeholder="Search lead, city, country..." 
+            class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Status</label>
+            <select id="filter-status" onchange="applyFilters()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="ALL">All Statuses</option>
+              <option value="New">New / Prospect</option>
+              <option value="Contacted">Contacted / Outreach</option>
+              <option value="In Progress">Negotiating / Meeting</option>
+              <option value="Won">Closed / Client</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Map View</label>
+            <select id="map-style-select" onchange="changeMapStyle(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="dark">Dark Matter</option>
+              <option value="streets">OpenStreetMap</option>
+              <option value="satellite">Satellite Imagery</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team Members List / Filter -->
+      <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Team Representatives</span>
+        <button onclick="resetMemberFilter()" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition">Select All</button>
+      </div>
+
+      <div class="p-3 space-y-1.5 overflow-y-auto max-h-52 border-b border-slate-800" id="team-list">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Leads List Pane -->
+      <div class="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Territory Leads (<span id="filtered-lead-count">0</span>)</span>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3 space-y-2" id="leads-list">
+        <!-- Injected via JS -->
+      </div>
+    </aside>
+
+    <!-- Map View -->
+    <main class="flex-1 relative bg-slate-950">
+      <div id="map" class="w-full h-full"></div>
+
+      <!-- Territory Quick Legend / Controls overlay -->
+      <div class="absolute bottom-6 left-6 z-[1000] bg-slate-900/90 backdrop-blur p-3.5 rounded-xl border border-slate-800 shadow-2xl text-xs space-y-2 pointer-events-auto max-w-xs">
+        <div class="font-bold text-slate-200 flex items-center gap-2">
+          <i class="fa-solid fa-layer-group text-indigo-400"></i> Rep Territory Overlay
+        </div>
+        <p class="text-[11px] text-slate-400">Click any marker or cluster to inspect assigned lead details, contact status, and address details.</p>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Add/Edit Lead Modal -->
+  <div id="lead-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="modal-title" class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-location-dot text-indigo-400"></i> Target Lead & Area Allocation
+        </h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="lead-form" onsubmit="handleLeadSubmit(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="lead-id" value="">
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 font-semibold mb-1">Company / Business Name *</label>
+            <input type="text" id="form-company" required placeholder="e.g. Acme Solar Corp" 
+              class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-slate-400 font-semibold mb-1">Contact Name</label>
+            <input type="text" id="form-name" placeholder="e.g. John Doe" 
+              class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 font-semibold mb-1">Email Address</label>
+            <input type="email" id="form-email" placeholder="contact@company.com" 
+              class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-slate-400 font-semibold mb-1">Assigned Team Rep *</label>
+            <select id="form-assigned" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+              <!-- Rep options injected -->
+            </select>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-3">
+          <div class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-map-pin"></i> Geographic Target Location
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-slate-400 text-[10px] mb-1">City / Place *</label>
+              <input type="text" id="form-city" required placeholder="Chicago" 
+                class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 text-[10px] mb-1">State / Province</label>
+              <input type="text" id="form-state" placeholder="Illinois" 
+                class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 text-[10px] mb-1">Country *</label>
+              <input type="text" id="form-country" required placeholder="USA" 
+                class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-slate-400 text-[10px] mb-1">Latitude (Auto or Manual)</label>
+              <input type="number" step="any" id="form-lat" placeholder="41.8781" 
+                class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 text-[10px] mb-1">Longitude (Auto or Manual)</label>
+              <input type="number" step="any" id="form-lng" placeholder="-87.6298" 
+                class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+          <button type="button" onclick="autoGeocodeForm()" class="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-fetch coordinates from City/Country
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 font-semibold mb-1">Outreach Status</label>
+            <select id="form-status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+              <option value="New">New Prospect</option>
+              <option value="Contacted">Contacted</option>
+              <option value="In Progress">In Progress / Pitching</option>
+              <option value="Won">Won / Deal Closed</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 font-semibold mb-1">Lead Notes</label>
+            <input type="text" id="form-notes" placeholder="Solar rooftop lead, contacted 2x..." 
+              class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-600/30 transition">Save Lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Team Reps Color Config
+    const TEAM_MEMBERS = [
+      { name: "Avner", color: "#6366f1", bg: "bg-indigo-500", border: "border-indigo-500" },
+      { name: "Adrian", color: "#06b6d4", bg: "bg-cyan-500", border: "border-cyan-500" },
+      { name: "Sayantan", color: "#10b981", bg: "bg-emerald-500", border: "border-emerald-500" },
+      { name: "Aryan", color: "#f59e0b", bg: "bg-amber-500", border: "border-amber-500" },
+      { name: "Rezwan", color: "#ec4899", bg: "bg-pink-500", border: "border-pink-500" },
+      { name: "Asmit", color: "#8b5cf6", bg: "bg-purple-500", border: "border-purple-500" }
+    ];
+
+    // Default Seed Leads across key US and Global Target Regions
+    let leadsData = [
+      { id: "L-101", company: "Boston Dynamics Tech", name: "David Miller", email: "david@bostontech.io", assigned_to: "Avner", status: "Contacted", city: "Boston", state: "Massachusetts", country: "USA", lat: 42.3601, lng: -71.0589, notes: "AI Automation Pitch" },
+      { id: "L-102", company: "Mass Solar Solutions", name: "Sarah Jenkins", email: "sarah@mass-solar.com", assigned_to: "Avner", status: "In Progress", city: "Cambridge", state: "Massachusetts", country: "USA", lat: 42.3736, lng: -71.1097, notes: "Follow up call booked" },
+      { id: "L-103", company: "Windy City Logistics", name: "Michael Chang", email: "mchang@chicago-logistics.com", assigned_to: "Adrian", status: "New", city: "Chicago", state: "Illinois", country: "USA", lat: 41.8781, lng: -87.6298, notes: "Supply chain outreach" },
+      { id: "L-104", company: "Illinois Medical Group", name: "Elena Rostova", email: "elena@ilmed.org", assigned_to: "Adrian", status: "Contacted", city: "Naperville", state: "Illinois", country: "USA", lat: 41.7508, lng: -88.1535, notes: "Sent cold briefing" },
+      { id: "L-105", company: "Pacific Energy Seattle", name: "Robert Thorne", email: "rthorne@pacificenergy.com", assigned_to: "Sayantan", status: "Won", city: "Seattle", state: "Washington", country: "USA", lat: 47.6062, lng: -122.3321, notes: "Closed 3-month contract" },
+      { id: "L-106", company: "Cascade Web Studio", name: "Chloe Bennett", email: "chloe@cascadeweb.io", assigned_to: "Sayantan", status: "Contacted", city: "Bellevue", state: "Washington", country: "USA", lat: 47.6101, lng: -122.2015, notes: "Web redesign pipeline" },
+      { id: "L-107", company: "Silicon Beach Agency", name: "Lucas Vance", email: "lucas@beachagency.la", assigned_to: "Aryan", status: "In Progress", city: "Los Angeles", state: "California", country: "USA", lat: 34.0522, lng: -118.2437, notes: "Video ad campaigns" },
+      { id: "L-108", company: "Bay Area FinTech", name: "Priya Sharma", email: "psharma@bayfintech.co", assigned_to: "Aryan", status: "Contacted", city: "San Francisco", state: "California", country: "USA", lat: 37.7749, lng: -122.4194, notes: "Security integration" },
+      { id: "L-109", company: "Austin Cloud Ventures", name: "Travis Cole", email: "travis@austincloud.tech", assigned_to: "Rezwan", status: "New", city: "Austin", state: "Texas", country: "USA", lat: 30.2672, lng: -97.7431, notes: "B2B SaaS outreach" },
+      { id: "L-110", company: "Lone Star Heavy Industries", name: "Hank Schrader", email: "hank@lonestarhi.com", assigned_to: "Rezwan", status: "Contacted", city: "Houston", state: "Texas", country: "USA", lat: 29.7604, lng: -95.3698, notes: "Sent portfolio" },
+      { id: "L-111", company: "London Bridge FinCapital", name: "Arthur Pendelton", email: "arthur@londonbridgefc.co.uk", assigned_to: "Asmit", status: "In Progress", city: "London", state: "England", country: "United Kingdom", lat: 51.5074, lng: -0.1278, notes: "UK financial district target" },
+      { id: "L-112", company: "Berlin Green Energy", name: "Stefan Müller", email: "stefan@berlingreen.de", assigned_to: "Asmit", status: "New", city: "Berlin", state: "Berlin", country: "Germany", lat: 52.5200, lng: 13.4050, notes: "European renewable lead" }
+    ];
+
+    // Load from LocalStorage or fetched leads_geo.json
+    async function loadInitialLeads() {
+      if (localStorage.getItem("solivern_map_leads")) {
+        try {
+          leadsData = JSON.parse(localStorage.getItem("solivern_map_leads"));
+        } catch (e) {
+          console.error("Failed to parse stored leads", e);
+        }
+      } else {
+        try {
+          const res = await fetch('/leads_geo.json');
+          if (res.ok) {
+            leadsData = await res.json();
+            saveLeadsToStorage();
+          }
+        } catch (err) {
+          console.log("Using default fallback leads");
+        }
+      }
+      renderTeamList();
+      populateRepSelect();
+      updateMapAndList();
+    }
+
+    let selectedMembers = new Set(TEAM_MEMBERS.map(m => m.name));
+    let map, markerClusterGroup, tileLayer;
+
+    // Tile providers
+    const TILES = {
+      dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+    };
+
+    function initMap() {
+      map = L.map('map', {
+        zoomControl: false
+      }).setView([39.8283, -98.5795], 4); // Centered on USA / Global view
+
+      L.control.zoom({ position: 'topright' }).addTo(map);
+
+      tileLayer = L.tileLayer(TILES.dark, {
+        attribution: '&copy; Solivern Intelligence',
+        maxZoom: 19
+      }).addTo(map);
+
+      markerClusterGroup = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        maxClusterRadius: 40
+      });
+      map.addLayer(markerClusterGroup);
+
+      loadInitialLeads();
+    }
+
+    function changeMapStyle(style) {
+      if (tileLayer) {
+        map.removeLayer(tileLayer);
+      }
+      tileLayer = L.tileLayer(TILES[style] || TILES.dark, {
+        attribution: '&copy; Solivern Intelligence',
+        maxZoom: 19
+      }).addTo(map);
+    }
+
+    function renderTeamList() {
+      const container = document.getElementById("team-list");
+      container.innerHTML = TEAM_MEMBERS.map(m => {
+        const count = leadsData.filter(l => l.assigned_to === m.name).length;
+        const isSelected = selectedMembers.has(m.name);
+        return `
+          <div onclick="toggleMemberFilter('${m.name}')" 
+            class="flex items-center justify-between p-2 rounded-lg cursor-pointer transition select-none ${isSelected ? 'bg-slate-800/80 border border-slate-700/80' : 'opacity-40 hover:opacity-75 bg-slate-950/40'}">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${m.color}"></span>
+              <span class="text-xs font-semibold text-slate-200">${m.name}</span>
+            </div>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700/60 text-slate-300">
+              ${count} leads
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function populateRepSelect() {
+      const select = document.getElementById("form-assigned");
+      select.innerHTML = TEAM_MEMBERS.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+    }
+
+    function toggleMemberFilter(name) {
+      if (selectedMembers.has(name)) {
+        if (selectedMembers.size > 1) {
+          selectedMembers.delete(name);
+        }
+      } else {
+        selectedMembers.add(name);
+      }
+      renderTeamList();
+      updateMapAndList();
+    }
+
+    function resetMemberFilter() {
+      selectedMembers = new Set(TEAM_MEMBERS.map(m => m.name));
+      renderTeamList();
+      updateMapAndList();
+    }
+
+    function applyFilters() {
+      updateMapAndList();
+    }
+
+    function getMemberColor(name) {
+      const found = TEAM_MEMBERS.find(m => m.name === name);
+      return found ? found.color : "#94a3b8";
+    }
+
+    function createCustomMarkerIcon(memberColor) {
+      return L.divIcon({
+        className: 'custom-pin',
+        html: `
+          <div style="
+            background: ${memberColor};
+            width: 26px;
+            height: 26px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+          ">
+            <div style="
+              width: 8px;
+              height: 8px;
+              background: white;
+              border-radius: 50%;
+              transform: rotate(45deg);
+            "></div>
+          </div>
+        `,
+        iconSize: [26, 26],
+        iconAnchor: [13, 26],
+        popupAnchor: [0, -26]
+      });
+    }
+
+    function updateMapAndList() {
+      const searchTerm = document.getElementById("search-input").value.toLowerCase();
+      const statusFilter = document.getElementById("filter-status").value;
+
+      markerClusterGroup.clearLayers();
+
+      const filteredLeads = leadsData.filter(lead => {
+        const matchesMember = selectedMembers.has(lead.assigned_to);
+        const matchesStatus = statusFilter === "ALL" || lead.status === statusFilter;
+        const matchesSearch = !searchTerm || 
+          lead.company.toLowerCase().includes(searchTerm) ||
+          lead.name.toLowerCase().includes(searchTerm) ||
+          lead.city.toLowerCase().includes(searchTerm) ||
+          (lead.state && lead.state.toLowerCase().includes(searchTerm)) ||
+          lead.country.toLowerCase().includes(searchTerm) ||
+          lead.assigned_to.toLowerCase().includes(searchTerm);
+
+        return matchesMember && matchesStatus && matchesSearch;
+      });
+
+      // Update counters
+      document.getElementById("stat-total-leads").innerText = leadsData.length;
+      document.getElementById("filtered-lead-count").innerText = filteredLeads.length;
+      
+      const uniqueRegions = new Set(leadsData.map(l => `${l.city}, ${l.country}`));
+      document.getElementById("stat-total-regions").innerText = uniqueRegions.size;
+
+      // Render Map Markers
+      filteredLeads.forEach(lead => {
+        if (lead.lat && lead.lng) {
+          const color = getMemberColor(lead.assigned_to);
+          const marker = L.marker([lead.lat, lead.lng], {
+            icon: createCustomMarkerIcon(color)
+          });
+
+          const popupContent = `
+            <div class="p-1 space-y-2 text-xs">
+              <div class="flex items-center justify-between border-b border-slate-700/80 pb-2">
+                <span class="font-bold text-white text-sm">${lead.company}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="background-color: ${color}20; color: ${color}; border: 1px solid ${color}60;">
+                  ${lead.assigned_to}
+                </span>
+              </div>
+              <div class="space-y-1 text-slate-300">
+                <div><i class="fa-solid fa-user text-slate-500 w-4"></i> ${lead.name || 'N/A'}</div>
+                <div><i class="fa-solid fa-envelope text-slate-500 w-4"></i> ${lead.email || 'N/A'}</div>
+                <div><i class="fa-solid fa-location-dot text-slate-500 w-4"></i> ${lead.city}${lead.state ? ', ' + lead.state : ''}, ${lead.country}</div>
+                <div><i class="fa-solid fa-tag text-slate-500 w-4"></i> Status: <span class="font-semibold text-slate-200">${lead.status}</span></div>
+                ${lead.notes ? `<div class="text-[11px] text-slate-400 italic bg-slate-900/80 p-1.5 rounded border border-slate-800 mt-1">${lead.notes}</div>` : ''}
+              </div>
+              <div class="pt-2 flex gap-1.5 border-t border-slate-700/80">
+                <button onclick="editLead('${lead.id}')" class="flex-1 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 rounded text-[11px] font-semibold transition">Edit</button>
+                <button onclick="deleteLead('${lead.id}')" class="px-2 py-1 bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 rounded text-[11px] font-semibold transition"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          `;
+
+          marker.bindPopup(popupContent);
+          markerClusterGroup.addLayer(marker);
+        }
+      });
+
+      // Render Leads List in Sidebar
+      const leadsContainer = document.getElementById("leads-list");
+      if (filteredLeads.length === 0) {
+        leadsContainer.innerHTML = `
+          <div class="text-center py-8 text-slate-500 text-xs">
+            <i class="fa-solid fa-map-location-dot text-2xl mb-2"></i>
+            <p>No leads match the current filters.</p>
+          </div>
+        `;
+      } else {
+        leadsContainer.innerHTML = filteredLeads.map(lead => {
+          const color = getMemberColor(lead.assigned_to);
+          return `
+            <div onclick="panToLead(${lead.lat}, ${lead.lng})" class="p-3 bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 rounded-xl cursor-pointer transition space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-xs text-white truncate max-w-[140px]">${lead.company}</span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border" style="background-color: ${color}15; color: ${color}; border-color: ${color}40;">
+                  ${lead.assigned_to}
+                </span>
+              </div>
+              <div class="text-[11px] text-slate-400 flex items-center justify-between">
+                <span><i class="fa-solid fa-location-dot text-slate-500"></i> ${lead.city}, ${lead.state || lead.country}</span>
+                <span class="text-[10px] text-slate-300">${lead.status}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function panToLead(lat, lng) {
+      if (lat && lng) {
+        map.flyTo([lat, lng], 12, { duration: 1.2 });
+      }
+    }
+
+    // Modal & CRUD Operations
+    function openAddLeadModal() {
+      document.getElementById("modal-title").innerHTML = `<i class="fa-solid fa-plus text-indigo-400"></i> Add Target Lead`;
+      document.getElementById("lead-form").reset();
+      document.getElementById("lead-id").value = "";
+      document.getElementById("lead-modal").classList.remove("hidden");
+    }
+
+    function editLead(id) {
+      const lead = leadsData.find(l => l.id === id);
+      if (!lead) return;
+
+      document.getElementById("modal-title").innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-400"></i> Edit Lead`;
+      document.getElementById("lead-id").value = lead.id;
+      document.getElementById("form-company").value = lead.company;
+      document.getElementById("form-name").value = lead.name || "";
+      document.getElementById("form-email").value = lead.email || "";
+      document.getElementById("form-assigned").value = lead.assigned_to;
+      document.getElementById("form-city").value = lead.city;
+      document.getElementById("form-state").value = lead.state || "";
+      document.getElementById("form-country").value = lead.country;
+      document.getElementById("form-lat").value = lead.lat || "";
+      document.getElementById("form-lng").value = lead.lng || "";
+      document.getElementById("form-status").value = lead.status;
+      document.getElementById("form-notes").value = lead.notes || "";
+
+      document.getElementById("lead-modal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("lead-modal").classList.add("hidden");
+    }
+
+    async function autoGeocodeForm() {
+      const city = document.getElementById("form-city").value;
+      const state = document.getElementById("form-state").value;
+      const country = document.getElementById("form-country").value;
+
+      if (!city || !country) {
+        alert("Please enter at least City and Country!");
+        return;
+      }
+
+      const query = `${city}, ${state ? state + ', ' : ''}${country}`;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          document.getElementById("form-lat").value = parseFloat(data[0].lat).toFixed(4);
+          document.getElementById("form-lng").value = parseFloat(data[0].lon).toFixed(4);
+        } else {
+          alert("Location not found automatically. Please enter coordinates manually.");
+        }
+      } catch (err) {
+        console.error("Geocoding failed", err);
+        alert("Auto-geocoding service unavailable.");
+      }
+    }
+
+    async function handleLeadSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById("lead-id").value || `L-${Date.now()}`;
+      const company = document.getElementById("form-company").value;
+      const name = document.getElementById("form-name").value;
+      const email = document.getElementById("form-email").value;
+      const assigned_to = document.getElementById("form-assigned").value;
+      const city = document.getElementById("form-city").value;
+      const state = document.getElementById("form-state").value;
+      const country = document.getElementById("form-country").value;
+      let lat = parseFloat(document.getElementById("form-lat").value);
+      let lng = parseFloat(document.getElementById("form-lng").value);
+      const status = document.getElementById("form-status").value;
+      const notes = document.getElementById("form-notes").value;
+
+      // If lat/lng missing, try quick geocoding
+      if (isNaN(lat) || isNaN(lng)) {
+        try {
+          const query = `${city}, ${state ? state + ', ' : ''}${country}`;
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+          const data = await res.json();
+          if (data && data.length > 0) {
+            lat = parseFloat(data[0].lat);
+            lng = parseFloat(data[0].lon);
+          } else {
+            lat = 40.7128; // Default fallback NYC
+            lng = -74.0060;
+          }
+        } catch {
+          lat = 40.7128;
+          lng = -74.0060;
+        }
+      }
+
+      const leadIndex = leadsData.findIndex(l => l.id === id);
+      const newLead = { id, company, name, email, assigned_to, city, state, country, lat, lng, status, notes };
+
+      if (leadIndex >= 0) {
+        leadsData[leadIndex] = newLead;
+      } else {
+        leadsData.unshift(newLead);
+      }
+
+      saveLeadsToStorage();
+      closeModal();
+      renderTeamList();
+      updateMapAndList();
+    }
+
+    function deleteLead(id) {
+      if (confirm("Are you sure you want to delete this lead?")) {
+        leadsData = leadsData.filter(l => l.id !== id);
+        saveLeadsToStorage();
+        renderTeamList();
+        updateMapAndList();
+      }
+    }
+
+    function saveLeadsToStorage() {
+      localStorage.setItem("solivern_map_leads", JSON.stringify(leadsData));
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(leadsData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `solivern_leads_territory_${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    window.onload = initMap;
+  </script>
+</body>
+</html>
